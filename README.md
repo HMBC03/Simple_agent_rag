@@ -58,7 +58,7 @@ El sistema tiene dos fases bien separadas: la **ingesta** (una sola vez, fuera d
 
 > El reranker **no está en el registry de Ollama** (fue retirado). Se carga desde HuggingFace la primera vez que usas `--rerank`; requiere `pip install sentence-transformers` y descargará el modelo automáticamente. El nombre en el registry de Ollama (`bge-reranker-v2-m3` o `linux6200/bge-reranker-v2-m3`) devuelve "file does not exist".
 
-- **Paquetes Python** (ver `requirements.txt`): `llama-index-core`, `llama-index-llms-ollama`, `llama-index-embeddings-ollama`, `llama-index-readers-file`, `fastapi`, `uvicorn`, `mcp[cli]`, `fastmcp`, `pydantic`, `pypdf`. Para la evaluación: `ragas==0.4.3`, `datasets`, `langchain`, `langchain-core>=1.4.7`, `langchain-community==0.4.2`, `langchain-google-vertexai` + un shim (ver sección 6, trampa 5).
+- **Paquetes Python** (ver `requirements.txt`): `llama-index-core`, `llama-index-llms-ollama`, `llama-index-embeddings-ollama`, `llama-index-readers-file`, `fastapi`, `uvicorn`, `mcp[cli]`, `fastmcp`, `pydantic`, `pypdf`. Para la evaluación: `ragas==0.4.3`, `datasets`, `langchain`, `langchain-core>=1.4.7`, `langchain-community==0.4.2`, `langchain-google-vertexai` + un shim.
 
 ---
 
@@ -248,24 +248,7 @@ Agregar una tool de búsqueda web o SQL es añadir otro `FunctionTool` a esa lis
 
 ---
 
-## 6. Trampas y soluciones
-
-1. **`self.rerank` enmascara el método `rerank` del workflow** (llama-index 0.14): un atributo bool con ese nombre hacía que el paso `@step` no se registrara y el validador fallara con "RerankEvent consumed but never produced". Se renombró a `self.use_rerank`.
-2. **`VectorStoreIndex.from_storage` fue eliminado**: en llama-index 0.14 usa `load_index_from_storage(storage)` con `StorageContext.from_defaults(persist_dir=...)` (import desde `llama_index.core.indices.loading`).
-3. **Timeout del workflow de 45 s por defecto**: la primera query carga `gpt-oss:20b` en VRAM y el modelo tarda más de un minuto en generar. `RagWorkflow(timeout=600.0)`.
-4. **MCP v2 separó los paquetes**: `FastMCP` ya no vive en `mcp` sino en `fastmcp` (instalar aparte). Importar `from fastmcp import FastMCP`.
-5. **ragas 0.4.3 choca con `langchain-google-vertexai`**: al importar juntos, ragas reexporta un módulo `vertexai` roto. Solución: copiar un shim `vertexai.py` dentro de `site-packages` (documentado en `eval.py`). No usar ragas más nuevo sin verificar.
-6. **`EvaluationDataset.from_hf_dataset`**: es la API de ragas 0.4.x para cargar/crear el test set; con versiones distintas la firma cambia.
-7. **No degradar `langchain-core`**: langgraph/ragas exigen `langchain-core>=1.4.7`; instalar versiones viejas rompe el import. Usar las versiones de `requirements.txt`.
-8. **El reranker no está en el registry de Ollama**: `bge-reranker-v2-m3` fue retirado y devuelve "file does not exist". Se carga desde HuggingFace con `sentence-transformers` (ver sección 2).
-9. **Frontend con Live Server → HTTP 405**: si abres `index.html` desde Live Server (puerto 5500), un fetch relativo (`/query`) pega en 5500 y devuelve 405. El frontend detecta `location.port` y usa `http://127.0.0.1:8000` como base (CORS `*` en la API).
-10. **Orden de rutas vs `StaticFiles` en FastAPI**: `app.mount("/", StaticFiles(...))` se ejecuta al final de `api.py`; todas las rutas (`/health`, `/query`, `/documents`, `/pdf/...`) se declaran antes, si no serían tapadas por el mount.
-11. **Saltar a página en el visor del navegador**: Chrome/Edge respetan `#page=N` en la URL del PDF. El endpoint `/pdf/{archivo}` solo usa el basename (sanitiza `../`) y sirve `inline`, así el hash funciona y no hay traversal.
-12. **Número de párrafo**: se calcula en la ingesta contando bloques separados por línea en blanco dentro de cada página. Si agregas o modificas PDFs, corre `ingest.py --force` para que el metadato de párrafo quede en el índice.
-
----
-
-## 7. Estado actual
+## 6. Estado actual
 
 -  Ingesta de 2 PDFs (292 nodos, con metadato de párrafo) persistida en `storage/`
 -  Workflow agéntico con citas verificables (archivo + página + párrafo + score)
