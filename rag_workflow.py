@@ -163,6 +163,7 @@ class RagWorkflow(Workflow):
                     "ref": i,
                     "file": meta.get("file_name", "desconocido"),
                     "page": meta.get("page_label", "?"),
+                    "paragraph": int(meta.get("paragraph", 1)),
                     "score": round(float(node.score or 0.0), 4),
                     "text": node.node.get_content()[:400],
                 }
@@ -216,6 +217,6 @@ if __name__ == "__main__":
         print(result.answer)
         print("\n--- FUENTES ---")
         for src in result.sources:
-            print(f"[{src['ref']}] {src['file']} p.{src['page']} (score {src['score']})")
+            print(f"[{src['ref']}] {src['file']} p.{src['page']} párr.{src['paragraph']} (score {src['score']})")
 
     asyncio.run(main())

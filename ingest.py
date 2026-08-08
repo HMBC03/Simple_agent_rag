@@ -1,6 +1,7 @@
 """Ingesta: PDFs -> chunks -> embeddings bge-m3 -> índice persistido en storage/."""
 
 import argparse
+import re
 from pathlib import Path
 
 from llama_index.core import (
@@ -37,13 +38,35 @@ def parse_documents() -> list:
     ).load_data()
 
 
+def _find_paragraph(page_text: str, node_text: str) -> int:
+    """Posición (1-based) del párrafo de la página donde empieza el nodo."""
+    probe = node_text.strip()[:60]
+    idx = page_text.find(probe)
+    if idx < 0:
+        idx = page_text.find(node_text.strip()[:30])
+    if idx < 0:
+        return 1
+    before = page_text[:idx]
+    return sum(1 for p in re.split(r"\n\s*\n+", before) if p.strip()) + 1
+
+
 def build_nodes(docs: list) -> list:
     parser = SentenceWindowNodeParser.from_defaults(
         window_size=3,
         window_metadata_key="window",
         original_text_metadata_key="original_text",
     )
-    return parser.get_nodes_from_documents(docs)
+    nodes = parser.get_nodes_from_documents(docs)
+
+    pages = {}
+    for d in docs:
+        key = (d.metadata.get("file_name"), d.metadata.get("page_label"))
+        pages[key] = d.get_content()
+
+    for n in nodes:
+        key = (n.metadata.get("file_name"), n.metadata.get("page_label"))
+        n.metadata["paragraph"] = _find_paragraph(pages.get(key, ""), n.get_content())
+    return nodes
 
 
 def main(force: bool = False) -> None:
