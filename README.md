@@ -16,7 +16,7 @@ El sistema tiene dos fases bien separadas: la **ingesta** (una sola vez, fuera d
 
 **Salidas.** El mismo `QueryResult` se sirve por varias fachadas: la API REST FastAPI (que además sirve el **frontend web** y los PDFs), el servidor MCP (tool `query_documents_tool` que los agentes — incluyendo opencode — pueden invocar) y la evaluación con Ragas (`eval.py`). Todas llaman a la misma función `query_documents()`, así que no hay lógica duplicada entre canales. El script `rag.bat` es un panel de control que ejecuta cualquiera de estos canales sin teclear comandos.
 
-**Frontend web** (`frontend/index.html`, estilo Qwen/Claude): las respuestas citan con chips `[n]` que abren el **PDF en la página exacta** dentro del visor del navegador (`#page=N`); cada fuente muestra `p.X · párr.Y`, barra de relevancia y un botón "Abrir PDF en la página X". Un panel lateral derecho **indexa los documentos** incluidos en el RAG (con páginas y tamaño, vía `GET /documents`) y cada uno abre su PDF. La conversación se guarda en `localStorage` y se restaura al recargar; tema claro/oscuro persistente; indicador de estado de la API.
+**Frontend web** (`frontend/index.html`, estilo Qwen/Claude): las respuestas citan con chips `[n]` que abren el **PDF en la página exacta** dentro del visor **pdf.js local** (canvas, sin CDN), que además **resalta el párrafo** citado con un rectángulo y hace scroll hasta él; barra del visor con página anterior/siguiente, contador `X / N` y zoom +/−. Cada fuente muestra `p.X · párr.Y`, barra de relevancia y un botón "Ver en el visor (p. X)". Un panel lateral derecho redimensionable (arrastra el borde, 260–680 px, ancho recordado en `localStorage`) **indexa los documentos** incluidos en el RAG (vía `GET /documents`) y cada uno abre su PDF. La conversación se guarda en `localStorage` y se restaura al recargar; si cambias de chat mientras se genera una respuesta, esta se guarda en la conversación original (no se corta ni se mezcla); tema claro/oscuro persistente; indicador de estado de la API. La documentación interactiva de la API (`/docs`) usa **Swagger UI servido localmente** (`frontend/vendor/swagger-ui/`), sin depender de CDN.
 
 ### 1.1 Decisiones de diseño
 
@@ -31,8 +31,9 @@ El sistema tiene dos fases bien separadas: la **ingesta** (una sola vez, fuera d
 |---|---|
 | `ingest.py` | Lee los PDFs de `data/`, los chunkiza con ventana de 3 oraciones, etiqueta cada nodo con su párrafo dentro de la página, genera embeddings bge-m3 y persiste el índice en `storage/`. Idempotente: si el índice existe, no reindexa (salvo `--force`). |
 | `rag_workflow.py` | Núcleo. Define los eventos tipados y los 3 pasos del workflow (retrieve → rerank → generate). Carga el índice persistido en memoria una sola vez. Contiene el prompt del sistema con las reglas de citado. |
-| `api.py` | FastAPI: `GET /health`, `GET /documents` (catálogo de PDFs indexados), `GET /pdf/{archivo}` (sirve el PDF con path sanitizado para que el navegador salte a `#page=N`) y `POST /query` (json con `question` y `rerank`). Devuelve `answer` + `sources[]` (ref, file, page, paragraph, score, text). Sirve el frontend desde la raíz. |
-| `frontend/index.html` | Chat web estilo Qwen/Claude sin frameworks: citas `[n]` que abren el PDF en la página exacta, tarjetas de fuente con párrafo y relevancia, panel derecho con los documentos indexados, caché de conversaciones en `localStorage`, tema claro/oscuro. |
+| `api.py` | FastAPI: `GET /health`, `GET /documents` (catálogo de PDFs indexados), `GET /pdf/{archivo}` (sirve el PDF con path sanitizado para que el navegador salte a `#page=N`) y `POST /query` (json con `question` y `rerank`). Devuelve `answer` + `sources[]` (ref, file, page, paragraph, score, text). Sirve el frontend desde la raíz y la documentación Swagger desde `frontend/vendor/swagger-ui/` (sin CDN). |
+| `frontend/index.html` | Chat web estilo Qwen/Claude sin frameworks: citas `[n]` que abren el PDF en la página exacta con pdf.js (resaltado del párrafo citado, zoom y paginación), tarjetas de fuente con párrafo y relevancia, panel lateral redimensionable con los documentos indexados, guard anti-corte al cambiar de conversación, caché en `localStorage`, tema claro/oscuro. |
+| `frontend/vendor/` | Bibliotecas servidas localmente, sin CDN: `pdf.min.js` + `pdf.worker.min.js` (visor PDF) y `swagger-ui/` (docs de la API). |
 | `rag.bat` | Panel de control (menú numérico) para ingesta, CLI, API + frontend, MCP, evaluación y limpieza de puertos. |
 | `mcp_server.py` | FastMCP: expone la tool `query_documents_tool(question, rerank)` por stdio (para opencode) u HTTP (`--http`). |
 | `eval.py` | Genera un test set de 12 preguntas con el propio LLM (`--build-test-set`) y mide el sistema con Ragas (faithfulness, response relevancy, context precision/recall). |
@@ -135,10 +136,12 @@ Respuesta: `{"answer": "... [1][2]", "sources": [{"ref": 1, "file": "...pdf", "p
 
 Abre `http://127.0.0.1:8000/` con la API corriendo (opción 5 de `rag.bat`). Funciones:
 
-- **Citas `[n]`**: cada chip abre el PDF en la página exacta de la fuente.
-- **Fuentes**: cada tarjeta muestra `p.X · párr.Y`, relevancia y un botón "Abrir PDF en la página X".
-- **Panel derecho "Documentos"**: catálogo de los PDFs indexados (`GET /documents`); clic abre el PDF.
+- **Citas `[n]`**: cada chip abre el PDF en la página exacta de la fuente, con el párrafo citado resaltado (visor pdf.js en canvas, sin CDN).
+- **Visor PDF**: barra propia con página anterior/siguiente, contador `X / N` y zoom +/−; renderiza con la resolución del monitor (devicePixelRatio).
+- **Fuentes**: cada tarjeta muestra `p.X · párr.Y`, relevancia y un botón "Ver en el visor (p. X)".
+- **Panel derecho "Documentos"**: redimensionable arrastrando el borde (260–680 px, el ancho se recuerda en `localStorage`); catálogo de los PDFs indexados (`GET /documents`); clic abre el PDF.
 - **Caché**: la conversación se guarda en `localStorage` y se restaura al recargar; el botón "Nueva" la borra.
+- **Anti-corte**: si cambias de conversación mientras se genera una respuesta, esta se guarda en la conversación original al terminar.
 - **Tema** claro/oscuro persistente e indicador de estado de la API.
 
 > Si abres `frontend/index.html` con Live Server de VS Code (u otro servidor estático), el frontend detecta que no está en el puerto 8000 y llama a la API en `http://127.0.0.1:8000` directamente — funciona igual, siempre que la API esté arriba.
@@ -253,7 +256,8 @@ Agregar una tool de búsqueda web o SQL es añadir otro `FunctionTool` a esa lis
 -  Ingesta de 2 PDFs (292 nodos, con metadato de párrafo) persistida en `storage/`
 -  Workflow agéntico con citas verificables (archivo + página + párrafo + score)
 -  API FastAPI (`/query`, `/health`, `/documents`, `/pdf/{archivo}`)
--  Frontend web estilo Qwen/Claude: citas → PDF en la página exacta, panel de documentos, caché de conversaciones, tema claro/oscuro
+-  Frontend web estilo Qwen/Claude: citas → PDF en la página exacta con pdf.js local (párrafo resaltado, zoom, paginación), panel de documentos redimensionable, caché de conversaciones con anti-corte, tema claro/oscuro
+-  Documentación de la API en `/docs` con Swagger UI servido localmente (sin CDN)
 -  Servidor MCP registrado en opencode
 -  Evaluación Ragas con LLM local (12 preguntas)
 -  Reranker disponible pero desactivado por defecto (ocupa VRAM adicional con el LLM cargado)
