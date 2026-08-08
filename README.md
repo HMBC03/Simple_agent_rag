@@ -227,25 +227,12 @@ Agregar una tool de búsqueda web o SQL es añadir otro `FunctionTool` a esa lis
 
 ---
 
-## 6. Trampas encontradas (para no repetirlas)
+## 6. Estado actual
 
-1. **`self.rerank` enmascara el método `rerank`**: un atributo de instancia con el mismo nombre que un `@step` hace que el paso no se registre ("RerankEvent consumed but never produced"). Prefijo `use_` en flags.
-2. **`VectorStoreIndex.from_storage` fue eliminado** en llama-index 0.14: usa `load_index_from_storage(storage)` de `llama_index.core.indices.loading`.
-3. **Workflow timeout por defecto 45 s**: el primer request carga el LLM en VRAM y excede. Se subió a 600 s en `RagWorkflow.__init__`.
-4. **Consola Windows cp1252**: la respuesta con caracteres UTF-8 (p. ej. `\u202f`) rompe `print()`. Solución: `sys.stdout.reconfigure(encoding="utf-8")` o `PYTHONIOENCODING=utf-8`.
-5. **Reranker fuera de Ollama**: `bge-reranker-v2-m3` no existe en el registry de Ollama ("file does not exist"). Usar HuggingFace vía `SentenceTransformerRerank`.
-6. **MCP 2.0 separó FastMCP**: `from mcp.server.fastmcp import FastMCP` ya no funciona; el paquete independiente es `fastmcp`.
-7. **Ragas 0.4.3 + langchain-community 0.4.x**: ragas importa `langchain_community.chat_models.vertexai`, eliminado en community 0.4.2. Fix: shim en `site-packages/langchain_community/chat_models/vertexai.py` que reexporta `ChatVertexAI`/`VertexAI` desde `langchain_google_vertexai`. No degradar `langchain-core` a <1.0: `langgraph` (dependencia transitiva) exige `>=1.4.7`.
-8. **Ragas 0.4.3**: `EvaluationDataset.from_dataset` no existe → `from_hf_dataset(ds)`. `Faithfulness`/`ResponseRelevancy` de `ragas.metrics` dan deprecation warning (irán a `ragas.metrics.collections` en 1.0) pero funcionan.
-
----
-
-## 7. Estado actual
-
-- [x] Ingesta de 2 PDFs (292 nodos) persistida en `storage/`
-- [x] Workflow agéntico con citas verificables (archivo + página + score)
-- [x] API FastAPI (`/query`, `/health`)
-- [x] Servidor MCP registrado en opencode
-- [x] Evaluación Ragas con LLM local (12 preguntas)
-- [ ] Reranker activado por defecto (requiere ver VRAM con el LLM cargado)
-- [ ] `AgentWorkflow` con tools adicionales (diseñado, no implementado)
+-  Ingesta de 2 PDFs (292 nodos) persistida en `storage/`
+-  Workflow agéntico con citas verificables (archivo + página + score)
+-  API FastAPI (`/query`, `/health`)
+-  Servidor MCP registrado en opencode
+-  Evaluación Ragas con LLM local (12 preguntas)
+-  Reranker activado por defecto (requiere ver VRAM con el LLM cargado)
+- `AgentWorkflow` con tools adicionales (diseñado, no implementado)
