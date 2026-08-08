@@ -1,11 +1,22 @@
 """API FastAPI sobre el workflow RAG. Comparte el núcleo con mcp_server.py."""
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from rag_workflow import QueryResult, query_documents
 
+BASE_DIR = __import__("pathlib").Path(__file__).resolve().parent
+
 app = FastAPI(title="RAG Inmobiliaria", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class QueryRequest(BaseModel):
@@ -41,7 +52,16 @@ async def query(req: QueryRequest) -> QueryResponse:
     return to_response(result)
 
 
+FRONTEND_DIR = BASE_DIR / "frontend"
+if FRONTEND_DIR.exists():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+
+
 if __name__ == "__main__":
+    import argparse
     import uvicorn
 
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    parser = argparse.ArgumentParser(description="API REST del RAG")
+    parser.add_argument("--port", type=int, default=8000, help="Puerto (default 8000)")
+    args = parser.parse_args()
+    uvicorn.run(app, host="127.0.0.1", port=args.port)
