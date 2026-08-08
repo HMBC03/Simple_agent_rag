@@ -129,7 +129,7 @@ curl -X POST http://127.0.0.1:8000/query -H "Content-Type: application/json" `
   -d '{"question": "¿Qué comando del CRM registra una oportunidad?", "rerank": false}'
 ```
 
-Respuesta: `{"answer": "... [1][2]", "sources": [{"ref": 1, "file": "...pdf", "page": "7", "paragraph": 3, "score": 0.63, "text": "..."}]}`. El frontend se sirve en la raíz (`http://127.0.0.1:8000/`) y los PDFs en `http://127.0.0.1:8000/pdf/{archivo}#page=N` (el visor del navegador salta a la página). Documentación interactiva en `http://127.0.0.1:8000/docs`.
+Respuesta: `{"answer": "... [1][2]", "sources": [{"ref": 1, "file": "...pdf", "page": "7", "paragraph": 3, "score": 0.63, "text": "..."}]}`. El frontend se sirve en la raíz (`http://127.0.0.1:8000/`) y los PDFs en `http://127.0.0.1:8000/pdf/{archivo}#page=N` (el visor del navegador salta a la página). Documentación interactiva en `http://127.0.0.1:8000/docs` (Swagger UI servido localmente desde `frontend/vendor/swagger-ui/`, sin CDN — funciona sin internet).
 
 ### 4.5 Frontend web
 

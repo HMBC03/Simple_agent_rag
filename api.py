@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -13,7 +13,19 @@ from rag_workflow import QueryResult, query_documents
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 
-app = FastAPI(title="RAG Inmobiliaria", version="0.2.0")
+app = FastAPI(
+    title="RAG Inmobiliaria",
+    version="0.3.0",
+    description=(
+        "API REST del RAG agéntico sobre manuales inmobiliarios (CRM y leads). "
+        "`POST /query` responde con citas verificables (archivo, página, párrafo, score); "
+        "`GET /documents` cataloga los PDFs indexados; "
+        "`GET /pdf/{archivo}` sirve el PDF en línea para el visor del navegador (usa `#page=N` para saltar); "
+        "`GET /health` para monitoreo. El frontend web se sirve en la raíz."
+    ),
+    docs_url=None,
+    redoc_url=None,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,21 +54,40 @@ class QueryResponse(BaseModel):
     sources: list[SourceOut]
 
 
+class DocumentOut(BaseModel):
+    file: str
+    pages: int
+    size_kb: float
+
+
+class DocumentsResponse(BaseModel):
+    documents: list[DocumentOut]
+
+
 def to_response(result: QueryResult) -> QueryResponse:
     return QueryResponse(answer=result.answer, sources=result.sources)
 
 
-@app.get("/health")
+@app.get("/health", summary="Estado de la API", tags=["core"])
 async def health() -> dict:
     return {"status": "ok"}
 
 
-@app.get("/documents")
-async def documents() -> dict:
-    return {"documents": _list_documents()}
+@app.get(
+    "/documents",
+    response_model=DocumentsResponse,
+    summary="Catálogo de PDFs indexados",
+    tags=["documentos"],
+)
+async def documents() -> DocumentsResponse:
+    return DocumentsResponse(documents=_list_documents())
 
 
-@app.get("/pdf/{filename}")
+@app.get(
+    "/pdf/{filename}",
+    summary="Servir un PDF en línea para el visor del navegador",
+    tags=["documentos"],
+)
 async def pdf(filename: str) -> FileResponse:
     name = Path(filename).name
     target = (DATA_DIR / name).resolve()
@@ -70,10 +101,46 @@ async def pdf(filename: str) -> FileResponse:
     )
 
 
-@app.post("/query", response_model=QueryResponse)
+@app.post(
+    "/query",
+    response_model=QueryResponse,
+    summary="Consultar los manuales con citas verificables",
+    tags=["consulta"],
+)
 async def query(req: QueryRequest) -> QueryResponse:
     result = await query_documents(req.question, rerank=req.rerank)
     return to_response(result)
+
+
+@app.get("/docs", include_in_schema=False, tags=["core"])
+async def swagger_ui() -> HTMLResponse:
+    return HTMLResponse(
+        """<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>API RAG Inmobiliaria — Documentación</title>
+<link rel="stylesheet" href="/vendor/swagger-ui/swagger-ui.css">
+</head>
+<body style="margin:0">
+<div id="swagger-ui"></div>
+<script src="/vendor/swagger-ui/swagger-ui-bundle.js"></script>
+<script src="/vendor/swagger-ui/swagger-ui-standalone-preset.js"></script>
+<script>
+window.onload = function () {
+  window.ui = SwaggerUIBundle({
+    url: "/openapi.json",
+    dom_id: "#swagger-ui",
+    deepLinking: true,
+    presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+    layout: "StandaloneLayout"
+  });
+};
+</script>
+</body>
+</html>
+"""
+    )
 
 
 _doc_cache: list | None = None
