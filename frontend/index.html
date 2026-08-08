@@ -129,27 +129,95 @@
   }
   aside.hidden { margin-right: -310px; }
   .docs-head {
-    padding: 16px 18px 12px;
+    padding: 10px 14px 0;
     border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 8px;
-    font-size: 12px; font-weight: 800;
-    text-transform: uppercase; letter-spacing: 1px;
-    color: var(--muted);
+    display: flex; align-items: center; gap: 4px;
     position: sticky; top: 0;
     background: var(--panel);
     z-index: 2;
   }
-  .docs-head .n {
-    margin-left: auto;
-    font-size: 11px; font-weight: 700;
-    color: var(--accent);
-    background: var(--accent-soft);
-    border-radius: 999px;
-    padding: 2px 9px;
-    letter-spacing: 0;
-    text-transform: none;
+  .tab {
+    font-size: 12px; font-weight: 700;
+    color: var(--muted);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 6px 10px 8px;
+    cursor: pointer;
+    transition: color .15s, border-color .15s;
+    font-family: inherit;
   }
-  #doc-list { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .tab:hover { color: var(--text); }
+  .tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+  .pane { display: flex; flex-direction: column; min-height: 0; }
+  .pane-off { display: none !important; }
+  #conv-list { padding: 10px; gap: 6px; }
+  #doc-list { padding: 10px; gap: 8px; }
+  #pdf-pane { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .conv { display: flex; align-items: center; gap: 4px; }
+  .conv-open {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 2px;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 11px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform .15s, border-color .15s, box-shadow .15s;
+  }
+  .conv-open:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow); }
+  .conv.active .conv-open { border-color: var(--accent); background: var(--accent-soft); }
+  .conv-open b {
+    font-size: 12.5px; font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .conv-open i { font-style: normal; font-size: 11px; color: var(--muted); }
+  .conv-del {
+    flex: none;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-size: 16px; line-height: 1;
+    cursor: pointer;
+    transition: color .15s, background .15s;
+  }
+  .conv-del:hover { color: var(--danger); background: var(--surface); }
+  .pdf-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    position: sticky; top: 0;
+    z-index: 2;
+  }
+  .pdf-bar span {
+    flex: 1; min-width: 0;
+    font-size: 12px; font-weight: 600; color: var(--text-soft);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pdf-close {
+    font-size: 11.5px; font-weight: 700;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color .15s, border-color .15s;
+  }
+  .pdf-close:hover { color: var(--accent); border-color: var(--accent); }
+  #pdf-frame { flex: 1; width: 100%; border: none; background: #fff; min-height: 0; }
+  #pdf-empty {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    font-size: 12.5px; color: var(--muted); text-align: center; line-height: 1.6;
+  }
   .doc {
     display: flex; align-items: center; gap: 11px;
     width: 100%;
@@ -495,8 +563,21 @@
   <main id="chat"></main>
 
   <aside id="docs">
-    <div class="docs-head">Documentos indexados <span class="n" id="doc-count">0</span></div>
-    <div id="doc-list"><div class="docs-empty">Cargando...</div></div>
+    <div class="docs-head">
+      <button class="tab on" id="tab-conv">Historial</button>
+      <button class="tab" id="tab-docs">Documentos</button>
+      <button class="tab" id="tab-pdf">PDF</button>
+    </div>
+    <div id="conv-list" class="pane"><div class="docs-empty">Sin conversaciones guardadas.</div></div>
+    <div id="doc-list" class="pane pane-off"><div class="docs-empty">Cargando...</div></div>
+    <div id="pdf-pane" class="pane pane-off">
+      <div class="pdf-bar">
+        <span id="pdf-name"></span>
+        <button class="pdf-close" id="pdf-close" title="Cerrar visor">Cerrar</button>
+      </div>
+      <iframe id="pdf-frame" title="Visor PDF"></iframe>
+      <div id="pdf-empty">Selecciona una cita o un documento y el PDF se verá aquí, en la página exacta.</div>
+    </div>
   </aside>
 </div>
 
@@ -508,7 +589,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
       </button>
     </div>
-    <div class="hint">Enter envía &middot; Shift+Enter nueva línea &middot; Las citas abren el PDF en la página exacta</div>
+    <div class="hint">Enter envía &middot; Shift+Enter nueva línea &middot; Las citas abren el PDF en el panel derecho, en la página exacta</div>
   </div>
 </footer>
 
@@ -518,7 +599,6 @@ const input = document.getElementById("input");
 const send = document.getElementById("send");
 const main = document.querySelector("main");
 const API_BASE = (location.port === "8000") ? "" : "http://127.0.0.1:8000";
-const HISTORY_KEY = "rag-chat-v1";
 const refs = {};
 
 const SUGGESTIONS = [
@@ -602,7 +682,7 @@ function buildWelcome() {
       '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>' +
     '</div>' +
     '<h2>' + greeting() + ' — ¿qué quieres consultar?</h2>' +
-    '<p>Respuestas sobre los manuales de procesos del CRM y manejo de leads, citando el archivo, la página y el párrafo exactos. En el panel derecho están los documentos indexados.</p>' +
+    '<p>Respuestas sobre los manuales de procesos del CRM y manejo de leads, citando el archivo, la página y el párrafo exactos. En el panel derecho: historial de conversaciones, documentos indexados y visor de PDF.</p>' +
     '<div class="suggest-grid"></div>';
   const grid = w.querySelector(".suggest-grid");
   SUGGESTIONS.forEach(s => {
@@ -648,7 +728,7 @@ function pdfUrl(file, page) {
 }
 
 function openPdf(file, page) {
-  window.open(pdfUrl(file, page), "_blank");
+  viewPdf(file, page);
 }
 
 function openPdfFile(btn) {
@@ -677,7 +757,7 @@ function renderSources(sources) {
       "</summary>" +
       '<div class="s-body">' +
         '<div class="s-score">Relevancia ' + pct + '%<div class="bar"><i style="width:' + pct + '%"></i></div></div>' +
-        '<button class="pdf-btn" data-file="' + escapeHtml(s.file) + '" data-page="' + pn + '" onclick="openPdfFile(this)">Abrir PDF en la página ' + pn + "</button>" +
+        '<button class="pdf-btn" data-file="' + escapeHtml(s.file) + '" data-page="' + pn + '" onclick="openPdfFile(this)">Ver en el visor (p. ' + pn + ")</button>" +
         '<div class="s-excerpt">' + escapeHtml(s.text) + "</div>" +
       "</div></details>";
   }).join("");
@@ -703,9 +783,43 @@ function addCopyButton(msg, rawText) {
   msg.appendChild(row);
 }
 
-/* ===== Caché de conversaciones (localStorage) ===== */
+/* ===== Almacén de conversaciones (localStorage) ===== */
 
-function saveHistory() {
+const STORE_KEY = "rag-history-v2";
+let conversations = [];
+let activeId = null;
+
+function loadStore() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      conversations = Array.isArray(s.conversations) ? s.conversations : [];
+      activeId = s.active || null;
+      return;
+    }
+  } catch (e) { /* cache corrupto, se ignora */ }
+  try {
+    const old = JSON.parse(localStorage.getItem("rag-chat-v1") || "[]");
+    if (old.length) {
+      const first = old.find(i => i.role === "user");
+      conversations = [{
+        id: String(Date.now()),
+        title: first ? first.q.slice(0, 48) : "Conversación",
+        ts: Date.now(),
+        messages: old
+      }];
+      activeId = conversations[0].id;
+      localStorage.removeItem("rag-chat-v1");
+    }
+  } catch (e) { /* nada que migrar */ }
+}
+
+function persist() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ conversations, active: activeId })); } catch (e) { /* lleno */ }
+}
+
+function collectMessages() {
   const items = [];
   for (const el of chat.children) {
     if (!el.classList.contains("msg")) continue;
@@ -718,25 +832,112 @@ function saveHistory() {
     if (!el._raw) continue;
     items.push({ role: "bot", answer: el._raw, sources: el._sources || [] });
   }
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(items)); } catch (e) { /* almacenamiento lleno */ }
+  return items;
 }
 
-function restoreHistory() {
-  let items = [];
-  try { items = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch (e) { items = []; }
-  if (!items.length) return false;
+function ensureActive() {
+  if (activeId && conversations.some(c => c.id === activeId)) return;
+  activeId = String(Date.now());
+  conversations.unshift({ id: activeId, title: "", ts: Date.now(), messages: [] });
+}
+
+function saveHistory() {
+  if (!activeId) return;
+  const items = collectMessages();
+  const conv = conversations.find(c => c.id === activeId);
+  if (!conv) return;
+  if (!conv.title) {
+    const first = items.find(i => i.role === "user");
+    if (first) conv.title = first.q.slice(0, 48) + (first.q.length > 48 ? "…" : "");
+  }
+  conv.messages = items;
+  conv.ts = Date.now();
+  persist();
+  renderConvList();
+}
+
+function fmtTs(ts) {
+  const d = new Date(ts);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return dd + "/" + mm + " " + hh + ":" + mi;
+}
+
+function renderConvList() {
+  const listEl = document.getElementById("conv-list");
+  listEl.innerHTML = "";
+  if (!conversations.length) {
+    listEl.innerHTML = '<div class="docs-empty">Sin conversaciones guardadas.<br>Las que inicies quedarán aquí.</div>';
+    return;
+  }
+  conversations.forEach(c => {
+    const row = document.createElement("div");
+    row.className = "conv" + (c.id === activeId ? " active" : "");
+    const open = document.createElement("button");
+    open.className = "conv-open";
+    const n = c.messages.length;
+    const t = c.title || "Nueva conversación";
+    open.innerHTML = "<b>" + escapeHtml(t) + "</b><i>" + fmtTs(c.ts) + " &middot; " + n +
+      (n === 1 ? " mensaje" : " mensajes") + "</i>";
+    open.addEventListener("click", () => switchConversation(c.id));
+    const del = document.createElement("button");
+    del.className = "conv-del";
+    del.textContent = "×";
+    del.title = "Eliminar conversación";
+    del.addEventListener("click", () => deleteConversation(c.id));
+    row.appendChild(open);
+    row.appendChild(del);
+    listEl.appendChild(row);
+  });
+}
+
+function restoreMessages(items) {
   for (const it of items) {
     if (it.role === "user") { addUser(it.q); continue; }
     const m = addBotAnswer(renderAnswer(it.answer) + renderSources(it.sources || []));
     addCopyButton(m, it.answer);
   }
-  return true;
+}
+
+function switchConversation(id) {
+  if (id === activeId) return;
+  saveHistory();
+  const conv = conversations.find(c => c.id === id);
+  if (!conv) return;
+  activeId = id;
+  chat.innerHTML = "";
+  if (conv.messages.length) restoreMessages(conv.messages);
+  else chat.appendChild(buildWelcome());
+  renderConvList();
+  main.scrollTop = 0;
+}
+
+function deleteConversation(id) {
+  conversations = conversations.filter(c => c.id !== id);
+  persist();
+  if (id === activeId) {
+    chat.innerHTML = "";
+    activeId = null;
+    if (conversations.length) {
+      const next = conversations[conversations.length - 1];
+      activeId = next.id;
+      if (next.messages.length) restoreMessages(next.messages);
+      else chat.appendChild(buildWelcome());
+    } else {
+      chat.appendChild(buildWelcome());
+    }
+  }
+  renderConvList();
 }
 
 function newChat() {
-  try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
+  saveHistory();
   chat.innerHTML = "";
+  activeId = null;
   chat.appendChild(buildWelcome());
+  renderConvList();
   input.focus();
 }
 
@@ -747,7 +948,9 @@ async function ask(text) {
   if (!q) return;
   input.value = "";
   autoGrow();
+  ensureActive();
   addUser(q);
+  saveHistory();
   send.disabled = true;
   const typing = addTyping();
   try {
@@ -781,7 +984,7 @@ function autoGrow() {
   input.style.height = Math.min(input.scrollHeight, 150) + "px";
 }
 
-/* ===== Panel de documentos ===== */
+/* ===== Panel de documentos + visor PDF ===== */
 
 const aside = document.getElementById("docs");
 const docToggle = document.getElementById("doc-toggle");
@@ -791,15 +994,53 @@ docToggle.addEventListener("click", () => {
 });
 if (window.innerWidth < 900) aside.classList.add("hidden");
 
+const pdfPane = document.getElementById("pdf-pane");
+const pdfFrame = document.getElementById("pdf-frame");
+const pdfName = document.getElementById("pdf-name");
+const pdfEmpty = document.getElementById("pdf-empty");
+const tabConv = document.getElementById("tab-conv");
+const tabDocs = document.getElementById("tab-docs");
+const tabPdf = document.getElementById("tab-pdf");
+
+function switchPane(which) {
+  document.getElementById("conv-list").classList.toggle("pane-off", which !== "conv");
+  document.getElementById("doc-list").classList.toggle("pane-off", which !== "docs");
+  pdfPane.classList.toggle("pane-off", which !== "pdf");
+  tabConv.classList.toggle("on", which === "conv");
+  tabDocs.classList.toggle("on", which === "docs");
+  tabPdf.classList.toggle("on", which === "pdf");
+}
+
+function viewPdf(file, page) {
+  if (!file) return;
+  const p = parseInt(page, 10) || 1;
+  pdfFrame.src = pdfUrl(file, p);
+  pdfName.textContent = file + " &middot; p." + p;
+  pdfEmpty.style.display = "none";
+  switchPane("pdf");
+  aside.classList.remove("hidden");
+  docToggle.classList.add("on");
+}
+
+function closePdf() {
+  pdfFrame.src = "about:blank";
+  pdfName.textContent = "";
+  pdfEmpty.style.display = "flex";
+  switchPane("conv");
+}
+
+tabConv.addEventListener("click", () => switchPane("conv"));
+tabDocs.addEventListener("click", () => switchPane("docs"));
+tabPdf.addEventListener("click", () => switchPane("pdf"));
+document.getElementById("pdf-close").addEventListener("click", closePdf);
+
 async function loadDocs() {
   const listEl = document.getElementById("doc-list");
-  const countEl = document.getElementById("doc-count");
   try {
     const r = await fetch(API_BASE + "/documents", { cache: "no-store" });
     if (!r.ok) throw new Error("HTTP " + r.status);
     const data = await r.json();
     const docs = data.documents || [];
-    countEl.textContent = String(docs.length);
     listEl.innerHTML = "";
     if (!docs.length) {
       listEl.innerHTML = '<div class="docs-empty">No hay documentos en data/</div>';
@@ -810,11 +1051,10 @@ async function loadDocs() {
       b.className = "doc";
       b.innerHTML = '<span class="d-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span>' +
         '<span class="d-txt"><b>' + escapeHtml(d.file) + '</b><i>' + d.pages + " páginas &middot; " + d.size_kb + " KB</i></span>";
-      b.addEventListener("click", () => openPdf(d.file, 1));
+      b.addEventListener("click", () => viewPdf(d.file, 1));
       listEl.appendChild(b);
     });
   } catch (e) {
-    countEl.textContent = "—";
     listEl.innerHTML = '<div class="docs-empty">API apagada.<br>Corre: .\\rag.bat (opción 5)</div>';
   }
 }
@@ -859,7 +1099,16 @@ input.addEventListener("keydown", e => {
 input.addEventListener("input", autoGrow);
 document.getElementById("newchat").addEventListener("click", newChat);
 
-if (!restoreHistory()) chat.appendChild(buildWelcome());
+loadStore();
+renderConvList();
+const target = (activeId && conversations.find(c => c.id === activeId)) || conversations[conversations.length - 1];
+if (target) {
+  activeId = target.id;
+  if (target.messages.length) restoreMessages(target.messages);
+  else chat.appendChild(buildWelcome());
+} else {
+  chat.appendChild(buildWelcome());
+}
 </script>
 </body>
 </html>
