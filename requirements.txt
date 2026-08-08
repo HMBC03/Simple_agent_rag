@@ -1,0 +1,10 @@
+llama-index-core>=0.14
+llama-index-llms-ollama
+llama-index-embeddings-ollama
+llama-index-readers-file
+llama-index-vector-stores-chroma
+fastapi>=0.115
+uvicorn[standard]
+mcp[cli]
+fastmcp
+pydantic>=2.9

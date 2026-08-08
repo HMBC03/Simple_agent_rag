@@ -1,0 +1,86 @@
+[
+  {
+    "question": "¿Cuál es la regla utilizada para asignar los Leads a los asesores?",
+    "correct_answer": "B",
+    "reference_contexts": [
+      "Se asigna el Lead a un Asesor Comercial según la regla de round robin ponderado por zona: cada Asesor recibe Leads de forma rotativa dentro de su zona, ajustado por su carga actual de Prospectos activos."
+    ]
+  },
+  {
+    "question": "¿Cuál es el SLA de primer contacto durante el horario laboral?",
+    "correct_answer": "B",
+    "reference_contexts": [
+      "Se activa el temporizador de SLA de primer contacto (15 minutos en horario laboral, de 8:00 a.m. a 6:00 p.m.; 2 horas fuera de este horario)."
+    ]
+  },
+  {
+    "question": "Según el protocolo de WhatsApp, ¿qué acción debe realizar el asesor dentro de los primeros 15 minutos?",
+    "correct_answer": "C",
+    "reference_contexts": [
+      "Responder dentro de los primeros 15 minutos con el mensaje de bienvenida estándar (plantilla WA-001)."
+    ]
+  },
+  {
+    "question": "¿Cómo se asignan los Leads marcados como Referido__c?",
+    "correct_answer": "B",
+    "reference_contexts": [
+      "Los Leads marcados como Referido__c se asignan siempre al mismo Asesor que gestionó al cliente que refiere, sin pasar por el round robin."
+    ]
+  },
+  {
+    "question": "¿Cuál es el puntaje mínimo que clasifica a un Lead como \"caliente\"?",
+    "correct_answer": "C",
+    "reference_contexts": [
+      "Un Lead con puntaje mayor o igual a 60 se considera caliente y debe priorizarse en la agenda diaria del Asesor; entre 30 y 59 se considera tibio y entra en cadencia de seguimiento regular; por debajo de 30 se considera frío y pasa al proceso de nutrición de largo plazo."
+    ]
+  },
+  {
+    "question": "Cuando un Lead llega fuera del horario laboral, ¿cuál es el SLA aplicable?",
+    "correct_answer": "C",
+    "reference_contexts": [
+      "El Lead se registra igualmente en el CRM y el SLA aplicable pasa a ser de 2 horas."
+    ]
+  },
+  {
+    "question": "En la cadencia de nutrición, ¿en qué día se envía el contenido \"Cómo elegir tu primera vivienda\"?",
+    "correct_answer": "B",
+    "reference_contexts": [
+      "Día 3 Envío de contenido de valor: guía 'Cómo elegir tu primera vivienda' (PDF)"
+    ]
+  },
+  {
+    "question": "¿Qué envía el sistema después de que un usuario completa el formulario del sitio web?",
+    "correct_answer": "A",
+    "reference_contexts": [
+      "El sistema envía automáticamente un correo de confirmación con el brochure digital de la Propiedad consultada (documento: 'Ficha_Tecnica_.pdf')."
+    ]
+  },
+  {
+    "question": "Si un Lead solicita no ser contactado nuevamente, ¿qué campo se marca en su registro?",
+    "correct_answer": "B",
+    "reference_contexts": [
+      "Se marca el campo No_Contactar__c en el registro de Lead o Contact, se detiene inmediatamente cualquier cadencia de nutrición automática, y se documenta la solicitud en el historial del registro, respetando la preferencia del interesado en todos los canales (WhatsApp, correo, llamadas)."
+    ]
+  },
+  {
+    "question": "¿Cuál es la consulta SOQL que recupera los Leads no convertidos de los últimos 7 días?",
+    "correct_answer": "C",
+    "reference_contexts": [
+      "SELECT Id, Name, LeadSource, Zona_Interes__c FROM Lead WHERE IsConverted = false AND CreatedDate = LAST_N_DAYS:7"
+    ]
+  },
+  {
+    "question": "Si un Lead no responde en 24 horas a través de WhatsApp, ¿qué acción debe realizarse?",
+    "correct_answer": "B",
+    "reference_contexts": [
+      "Si el Lead no responde en 24 horas, enviar un mensaje de seguimiento (plantilla WA-002); si no hay respuesta en 72 horas, mover a la cadencia de nutrición (Nurturing)."
+    ]
+  },
+  {
+    "question": "En las buenas prácticas, ¿qué acción se debe evitar para no perder oportunidades?",
+    "correct_answer": "A",
+    "reference_contexts": [
+      "Enviar información genérica sin adaptar el mensaje a la zona, presupuesto o tipo de inmueble mencionado por el Lead."
+    ]
+  }
+]
