@@ -66,6 +66,7 @@ async def pdf(filename: str) -> FileResponse:
         str(target),
         media_type="application/pdf",
         filename=name,
+        content_disposition_type="inline",
     )
 
 
